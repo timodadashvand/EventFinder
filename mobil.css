@@ -1,0 +1,54 @@
+.mobileButton{
+	height:100%;
+	padding:0px;
+	margin:0px;
+}
+.mobileButton:hover{
+	background-color:lightgray;
+	opacity:0.9;
+}
+.tabletSection{
+	display:none;
+}
+.tempSection{
+	display:none;
+}
+.movieButton{
+	float:left;
+	height:41px;
+	width:105px;
+	padding:0px;
+	margin:0px;
+	font-size:14px;
+}
+.movieDiv{
+	width:70%;
+	padding:2px;
+	padding-left:110px;
+	background-color:lightgray;
+	margin:0px;
+	box-shadow: 1px 1px 1px 1px #888888;
+}
+#wrapper > header img{
+	float:right;
+}
+#wrapper > header h1{
+	float:left;
+}
+#wrapper > nav{
+	display:none;
+	padding:0px;
+	margin:0px;
+}
+#wrapper > nav ul{
+	padding:0px;
+	margin:0px;
+}
+#wrapper > article{
+	padding-left:10px;
+	padding-top:0px;
+	margin:0px;
+}
+.h1_menu{
+	display:none;
+}

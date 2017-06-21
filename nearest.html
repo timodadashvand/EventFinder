@@ -1,0 +1,105 @@
+<script type="text/javascript">
+var map,lon,lat,myPos,currLon,currLat;
+
+if(navigator.geolocation){
+	$("#loading").fadeIn(200);
+	navigator.geolocation.getCurrentPosition(initMap, showError, {enableHighAccuracy: true});			
+}else{
+	$("#loading").fadeOut(200);
+	alert("Din webbläsare stödjer inte geolocation");
+}
+
+function initMap(position){
+	lon = position.coords.longitude;
+	lat = position.coords.latitude;
+	myPos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+	google.maps.visualRefresh = true;
+	var mapOptions = {
+		zoom: 12,
+		center: myPos,
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		disableDefaultUI: false,
+		mapMaker: true
+	};
+		
+	map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+	var contentString = "<h1>You are here</h1>";
+	var infowindow = new google.maps.InfoWindow({
+		content: contentString
+	});
+	marker = new google.maps.Marker({
+		position: myPos,
+		icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+	});
+	marker.addListener('click', function() {
+		infowindow.open(map, marker);
+	});
+	marker.setMap(map);
+	
+	var eventPos;
+	var searchURL = "https://api.eventful.com/json/events/search?location=" + lat + "," + lon + "&within=10&page_size=50&app_key=vhhdJmn8k9W6CwRf";
+	$.ajax({
+	type:"GET", 
+	url: searchURL, 
+	success: function(data) {
+		if(data["events"] != null) {
+			array = data["events"].event;
+			for(i = 0; i < array.length; i++) {
+				eventPos = new google.maps.LatLng(array[i]["latitude"], array[i]["longitude"]);
+				var infowindow = new google.maps.InfoWindow();
+				var marker2 = new google.maps.Marker({
+					position: eventPos,
+					title: array[i]["title"]
+				});
+				marker2.setMap(map);
+				var contentString = '<div><h1>' + array[i]["title"] + '</h1><p><b>Date: </b>' + array[i]["start_time"] + '</br><b>Venue address: </b>' + array[i]["venue_address"] + '</br><b>URL: </b><a href="' + array[i]["url"] + '">' + array[i]["url"] + '</a></br><b>Distance to event: </b>' + calculate(marker2.getPosition()) + 'km</p></div>';
+				google.maps.event.addListener(marker2,'click', (function(marker2,content,infowindow){ 
+					return function() {
+						infowindow.setContent(content);
+						infowindow.open(map,marker2);
+					};
+				})(marker2,contentString,infowindow));
+			}
+		} else {
+			$("#loading").fadeOut(200);
+			alert("No event matched your search.");
+		}
+	},
+	error: function(jqXHR, textStatus, errorThrown) {
+        alert(jqXHR.status);
+    },
+	dataType: "jsonp"
+	
+	});
+	$("#loading").fadeOut(200);
+}
+
+function calculate(position){
+	var result = google.maps.geometry.spherical.computeDistanceBetween(marker.getPosition(), position);
+	var calc = (result / 1000);
+	if(result != null){
+		return "" + calc.toFixed(2);
+	} else {
+		return "null";
+	}
+}
+
+function showError(error){
+	alert("Error!");
+}
+</script>
+<h1>Shows nearest events</h1>
+</p>
+<hr></p>
+<div id="map-canvas"></div>
+
+<style type="text/css">
+#geolocation{
+	font-size:40px;
+	color:blue;
+}
+#map-canvas{
+	width:100%;
+	height:620px;
+}
+</style>

@@ -1,0 +1,25 @@
+.mobileButton{
+	display:none;
+}
+.tabletSection{
+	padding-top:15px;
+	padding-left:5px;
+}
+.mobileSection{
+	display:none;
+}
+#wrapper > nav{
+	float:left;
+	width:200px;
+	height:89%;
+	padding:0px;
+}
+#wrapper > nav li:first-child{
+	border-top:1px #FFFFFF solid;
+}
+#wrapper > nav h3{
+	padding:7px;
+}
+#wrapper > article{
+	padding-left:215px !important;
+}

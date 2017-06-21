@@ -1,0 +1,52 @@
+<script type="text/javascript">
+var map,lon,lat,myPos;
+var markers = [];
+
+if(navigator.geolocation){
+	navigator.geolocation.getCurrentPosition(initMap, showError, {enableHighAccuracy: true});;			
+}else{
+	alert("Din webbläsare stödjer inte geolocation");
+}
+function initMap(position){
+	lon = position.coords.longitude;
+	lat = position.coords.latitude;
+	myPos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+	
+	google.maps.visualRefresh = true;
+	var mapOptions = {
+		zoom: 20,
+		center: myPos,
+		mapTypeId: google.maps.MapTypeId.SATELLITE,
+		disableDefaultUI: false,
+		mapMaker: true
+	};
+	map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+	
+	marker = new google.maps.Marker({
+		position: myPos
+	});
+	marker.setMap(map);	
+}
+			
+function showError(error){
+	alert("Error!\nNågot gick fel.");
+}
+</script>
+
+<h1>Nearest events</h1>
+<p>
+Shows current position and nearest events.
+</p>
+<hr></p>
+<div id="map-canvas"></div>
+
+<style type="text/css">
+#geolocation{
+	font-size:40px;
+	color:blue;
+}
+#map-canvas{
+	width:100%;
+	height:550px;
+}
+</style>

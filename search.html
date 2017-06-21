@@ -1,0 +1,88 @@
+<script type="text/javascript">
+var cityLon, cityLat;
+var inputCity = document.getElementById('inputCity');
+var autocomplete = new google.maps.places.Autocomplete(inputCity);
+$("#searchButton").on("click", search);
+
+// After the API loads, call a function to enable the search box.
+function handleAPILoaded() {
+  $('#search-button').attr('disabled', false);
+}
+
+google.maps.event.addListener(autocomplete,'place_changed', function () {
+	var place = autocomplete.getPlace();
+    cityLat = place.geometry.location.lat();
+	cityLon = place.geometry.location.lng();
+});
+
+// Search for a specified string.
+function search(){
+	$(".searchResult").empty();
+	var inputKeyword = $("#inputKeyword").val();
+	var inputCity = $("#inputCity").val();
+	var title = "";
+	var searchURL;
+	var array;
+	
+	if((document.forms['form'].inputKeyword.value != "") || (document.forms['form'].inputCity.value != "")) {
+		$("#loading").fadeIn(200);
+		$(".searchResult").append("<i>Your search yielded following result:</i></p></br>");
+		searchURL = "https://api.eventful.com/json/events/search?q=" + inputKeyword + "&location=" + cityLat + "," + cityLon + "&within=10&page_size=15&app_key=vhhdJmn8k9W6CwRf";
+		$.ajax({
+		type:"GET", 
+		url: searchURL, 
+		success: function(data) {
+			if(data["events"] != null) {
+				array = data["events"].event;
+				$(".searchResult").append("Number of hits: " + data["total_items"] + "</p>");
+				for(i = 0; i < array.length; i++) {
+					$(".searchResult").append('<div class=eventDiv><center><font size=5>' + array[i]["title"] + '</font></center><br><b>Description: </b>' + array[i]["description"] + '<br><b>Date: </b>' + array[i]["start_time"] + '<br><b>Venue address: </b>' + array[i]["venue_address"] + '<br><b>URL: </b><a href="' + array[i]["url"] + '">' + array[i]["url"] + '</a></p></div></p>');
+				}
+				$("#loading").fadeOut(200);
+			} else {
+				$("#loading").fadeOut(200);
+				alert("No event matched your search.");
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+            alert(jqXHR.status);
+        },
+		dataType: "jsonp"
+		
+		});
+	} else {
+		alert("You have to enter a city or keyword to be able to search!");
+	}
+}
+
+document.getElementById('inputKeyword').onkeypress = function(e){
+    if(!e) e = window.event;
+    var keyCode = e.keyCode || e.which;
+    if (keyCode == '13'){
+      // Enter pressed
+      search();
+	  return false;
+    }
+}
+document.getElementById('inputCity').onkeypress = function(e){
+    if(!e) e = window.event;
+    var keyCode = e.keyCode || e.which;
+    if (keyCode == '13'){
+      // Enter pressed
+      search();
+	  return false;
+    }
+}
+</script>
+
+<h1>Search event</h1>
+<p>
+Please enter a city or keyword to search for event
+</p>
+<hr></p>
+<form name="form">
+<table width=100%><tr><td width=50%>Keyword:<br><input type="text" size="15" id="inputKeyword" name="inputKeyword" autofocus></td>
+<td width=50%>City:<br><input type="text" size="15" id="inputCity" name="inputCity"></td></tr></table><p>
+<button type="button" id="searchButton">Search</button>
+</form>
+<div class="searchResult"></div>

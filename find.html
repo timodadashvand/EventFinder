@@ -1,0 +1,288 @@
+<script type="text/javascript">
+var map, lon, lat, cityLon, cityLat, myPos, marker, markerDestination, cityOrigin, cityName, directionsDisplay;
+var markers = [];
+var inputCity = document.getElementById('inputCity');
+var autocomplete = new google.maps.places.Autocomplete(inputCity);
+$("#searchButton").on("click", search);
+
+if(navigator.geolocation){
+	$("#loading").fadeIn(200);
+	navigator.geolocation.getCurrentPosition(initMap, showError, {enableHighAccuracy: true});;			
+}else{
+	$("#loading").fadeOut(200);
+	alert("Din webbläsare stödjer inte geolocation");
+}
+
+google.maps.event.addListener(autocomplete,'place_changed', function () {
+	var place = autocomplete.getPlace();
+    cityLat = place.geometry.location.lat();
+	cityLon = place.geometry.location.lng();
+	cityOrigin = new google.maps.LatLng(cityLat,cityLon);
+	cityName = inputCity.value;
+});
+
+function initMap(position){
+	lon = position.coords.longitude;
+	lat = position.coords.latitude;
+	myPos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+	google.maps.visualRefresh = true;
+	var mapOptions = {
+		zoom: 13,
+		center: myPos,
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		disableDefaultUI: false,
+		mapMaker: true
+	};
+	map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+	var contentString = "<h1>You are here</h1>";
+	var infowindow = new google.maps.InfoWindow({
+		content: contentString
+	});
+	marker = new google.maps.Marker({
+		position: myPos, 
+		icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+	});
+	marker.addListener('click', function() {
+		infowindow.open(map, marker);
+	});
+	marker.setMap(map);	
+	$("#loading").fadeOut(200);
+}
+			
+function showError(error){
+	$("#loading").fadeOut(200);
+	alert("Error!");
+}
+
+function search(){
+	clearMarkers();
+	$("#loading").fadeIn(200);
+	var nearestDate, tempArray, eventPos, searchURL;
+	if((document.forms['form'].inputKeyword.value != "") && (document.forms['form'].inputCity.value != "")){
+		searchURL = "https://api.eventful.com/json/events/search?q=" + inputKeyword.value + "&location=" + cityLat + "," + cityLon + "&within=10&page_size=100&app_key=vhhdJmn8k9W6CwRf";
+		$.ajax({
+		type:"GET", 
+		url: searchURL, 
+		success: function(data) {
+			if(data["events"] != null) {
+				array = data["events"].event;
+				for(i = 0; i < array.length; i++) {
+					if(i == 0){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					} else if(nearestDate < array[i]["start_time"]){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					}
+				}
+				var contentString = "<h1>" + cityName + "</h1>";
+				var infowindowCity = new google.maps.InfoWindow({
+					content: contentString
+				});
+				markerCity = new google.maps.Marker({
+					position: cityOrigin, 
+					icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+				});
+				markerCity.addListener('click', function() {
+					infowindowCity.open(map, markerCity);
+				});
+				markerCity.setMap(map);	
+				markers.push(markerCity);
+				eventPos = new google.maps.LatLng(tempArray["latitude"], tempArray["longitude"]);
+				var infowindow = new google.maps.InfoWindow();
+				markerDestination = new google.maps.Marker({
+					position: eventPos,
+					title: tempArray["title"]
+				});
+				markerDestination.setMap(map);
+				markers.push(markerDestination);
+				var contentString = '<div><h1>' + tempArray["title"] + '</h1><p><b>Date: </b>' + tempArray["start_time"] + '</br><b>Venue address: </b>' + tempArray["venue_address"] + '</br><b>URL: </b><a href="' + tempArray["url"] + '">' + tempArray["url"] + '</a></br><b>Distance to event: </b>' + calculate(cityOrigin, markerDestination.getPosition()) + 'km</p></div>';
+				google.maps.event.addListener(markerDestination,'click', (function(markerDestination,content,infowindow){ 
+					return function() {
+						infowindow.setContent(content);
+						infowindow.open(map,markerDestination);
+					};
+				})(markerDestination,contentString,infowindow));
+				drawDirections(cityOrigin, markerDestination.getPosition());
+				$("#loading").fadeOut(200);
+			} else {
+				$("#loading").fadeOut(200);
+				alert("No event matched your search.");
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.status);
+		},
+			dataType: "jsonp"
+		});
+		$("#loading").fadeOut(200);
+	} else if(document.forms['form'].inputKeyword.value != "") {
+		searchURL = "https://api.eventful.com/json/events/search?q=" + inputKeyword.value + "&location=" + lat + "," + lon + "&within=10&page_size=100&app_key=vhhdJmn8k9W6CwRf";
+		$.ajax({
+		type:"GET", 
+		url: searchURL, 
+		success: function(data) {
+			if(data["events"] != null) {
+				array = data["events"].event;
+				for(i = 0; i < array.length; i++) {
+					if(i == 0){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					} else if(nearestDate < array[i]["start_time"]){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					}
+				}
+				eventPos = new google.maps.LatLng(tempArray["latitude"], tempArray["longitude"]);
+				var infowindow = new google.maps.InfoWindow();
+				markerDestination = new google.maps.Marker({
+					position: eventPos,
+					title: tempArray["title"]
+				});
+				markerDestination.setMap(map);
+				markers.push(markerDestination);
+				var contentString = '<div><h1>' + tempArray["title"] + '</h1><p><b>Date: </b>' + tempArray["start_time"] + '</br><b>Venue address: </b>' + tempArray["venue_address"] + '</br><b>URL: </b><a href="' + tempArray["url"] + '">' + tempArray["url"] + '</a></br><b>Distance to event: </b>' + calculate(marker.getPosition(), markerDestination.getPosition()) + 'km</p></div>';
+				google.maps.event.addListener(markerDestination,'click', (function(markerDestination,content,infowindow){ 
+					return function() {
+						infowindow.setContent(content);
+						infowindow.open(map,markerDestination);
+					};
+				})(markerDestination,contentString,infowindow));
+				$("#loading").fadeOut(200);
+				drawDirections(marker.getPosition(), markerDestination.getPosition());
+			} else {
+				$("#loading").fadeOut(200);
+				alert("No event matched your search.");
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.status);
+		},
+			dataType: "jsonp"
+		});
+	} else {
+		searchURL = "https://api.eventful.com/json/events/search?location=" + lat + "," + lon + "&within=10&page_size=100&app_key=vhhdJmn8k9W6CwRf";
+		$.ajax({
+		type:"GET", 
+		url: searchURL, 
+		success: function(data) {
+			if(data["events"] != null) {
+				array = data["events"].event;
+				for(i = 0; i < array.length; i++) {
+					if(i == 0){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					} else if(nearestDate < array[i]["start_time"]){
+						nearestDate = array[i]["start_time"];
+						tempArray = array[i];
+					}
+				}
+				eventPos = new google.maps.LatLng(tempArray["latitude"], tempArray["longitude"]);
+				var infowindow = new google.maps.InfoWindow();
+				markerDestination = new google.maps.Marker({
+					position: eventPos,
+					title: tempArray["title"]
+				});
+				markerDestination.setMap(map);
+				markers.push(markerDestination);
+				var contentString = '<div><h1>' + tempArray["title"] + '</h1><p><b>Date: </b>' + tempArray["start_time"] + '</br><b>Venue address: </b>' + tempArray["venue_address"] + '</br><b>URL: </b><a href="' + tempArray["url"] + '">' + tempArray["url"] + '</a></br><b>Distance to event: </b>' + calculate(marker.getPosition(), markerDestination.getPosition()) + 'km</p></div>';
+				google.maps.event.addListener(markerDestination,'click', (function(markerDestination,content,infowindow){ 
+					return function() {
+						infowindow.setContent(content);
+						infowindow.open(map,markerDestination);
+					};
+				})(markerDestination,contentString,infowindow));
+				$("#loading").fadeOut(200);
+				drawDirections(marker.getPosition(), markerDestination.getPosition());
+			} else {
+				$("#loading").fadeOut(200);
+				alert("No event matched your search.");
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.status);
+		},
+			dataType: "jsonp"
+		});
+	}
+}
+
+function calculate(paramOriginCalc, paramDestinationCalc){
+	var result = google.maps.geometry.spherical.computeDistanceBetween(paramOriginCalc, paramDestinationCalc);
+	var calc = (result / 1000);
+	if(result != null){
+		return "" + calc.toFixed(2);
+	} else {
+		return "null";
+	}
+}
+
+function drawDirections(paramOrigin, paramDestination){
+	var directionsService = new google.maps.DirectionsService();
+	directionsDisplay = new google.maps.DirectionsRenderer();
+	directionsDisplay.setOptions( { suppressMarkers: true } );
+	directionsDisplay.setMap(map);
+	var request = {
+		origin: paramOrigin,
+		destination: paramDestination,
+		travelMode: google.maps.TravelMode.WALKING
+	};
+	directionsService.route(request, function(result, status) {
+		if (status == google.maps.DirectionsStatus.OK) {
+			directionsDisplay.setDirections(result);
+		}
+	});
+	$("#loading").fadeOut(200);
+}
+
+function clearMarkers(){
+	if(directionsDisplay != null){
+		directionsDisplay.setMap(null);
+	}
+	for(i = 0; i < markers.length; i++) {
+		markers[i].setMap(null);
+	}
+}
+
+document.getElementById('inputKeyword').onkeypress = function(e){
+    if(!e) e = window.event;
+    var keyCode = e.keyCode || e.which;
+    if (keyCode == '13'){
+      // Enter pressed
+      search();
+	  return false;
+    }
+}
+
+document.getElementById('inputCity').onkeypress = function(e){
+    if(!e) e = window.event;
+    var keyCode = e.keyCode || e.which;
+    if (keyCode == '13'){
+      // Enter pressed
+      search();
+	  return false;
+    }
+}
+</script>
+
+<h1>Find event now</h1>
+<p>
+Here you can find the earliest upcoming event with road directions on map. 
+</p><hr></p>
+<form name="form">
+<table width=100%><tr><td width=50%>Keyword (Optional):<br><input type="text" size="15" id="inputKeyword" name="inputKeyword" autofocus></td>
+<td width=50%>City (Optional):<br><input type="text" size="15" id="inputCity" name="inputCity"></td></tr></table><p>
+<button type="button" id="searchButton">Find earliest upcoming event</button>
+</form>
+<div id="map-canvas"></div>
+
+<style type="text/css">
+#geolocation{
+	font-size:40px;
+	color:blue;
+}
+#map-canvas{
+	width:100%;
+	height:620px;
+}
+</style>
